@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caccia al Tesoro - Ergo Platform</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Caccia al Tesoro - Ergo Platform</h1>
+        <div id="clue-container">
+            <h2 id="clue-title">Indizio 1</h2>
+            <p id="clue-text">Caricamento...</p> <!-- Placeholder text while loading -->
+            <input type="text" id="user-answer" placeholder="Scrivi la tua risposta" />
+            <button id="submit-answer">Invia Risposta</button>
+            <p id="feedback" style="color: red;"></p> <!-- Feedback message -->
+        </div>
+    </div>
+    
+    <script>
+        let clues = [];
+        let currentClueIndex = 0; // Keeps track of the current clue
+
+        // Function to fetch clues from Google Apps Script Web App
+        async function fetchClues() {
+            const url = 'https://script.google.com/macros/s/AKfycbx9grS3b3m0bay7MLLZ7nsdUr7XyRPgku-jGtM9aUfGzcRLC-pq6phNA2CXX2u3AA0q8A/exec'; // Sostituisci con l'URL del tuo Web App
+
+            try {
+                const response = await fetch(url);
+                clues = await response.json();
+                displayClue(); // Show the first clue after fetching
+            } catch (error) {
+                console.error('Error fetching clues:', error);
+                document.getElementById('clue-text').textContent = "Errore nel caricamento degli indizi!";
+            }
+        }
+
+        // Function to display the current clue
+        function displayClue() {
+            const clueTitle = document.getElementById('clue-title');
+            const clueText = document.getElementById('clue-text');
+            const feedbackElement = document.getElementById('feedback');
+            feedbackElement.textContent = ''; // Reset feedback
+
+            // Display current clue
+            clueTitle.textContent = `Indizio ${currentClueIndex + 1}`;
+            clueText.textContent = clues[currentClueIndex].question;
+        }
+
+        // Event listener for the submit button
+        document.getElementById('submit-answer').addEventListener('click', function() {
+            const userAnswer = document.getElementById('user-answer').value.trim().toLowerCase();
+            const correctAnswer = clues[currentClueIndex].answer; // Get the correct answer for the current clue
+            const feedbackElement = document.getElementById('feedback');
+
+            if (userAnswer === '') {
+                feedbackElement.textContent = "Per favore, inserisci una risposta.";
+                feedbackElement.style.color = "orange";
+                return;
+            }
+
+            if (userAnswer === correctAnswer) {
+                feedbackElement.textContent = "Corretto! Passa al prossimo indizio!";
+                feedbackElement.style.color = "green";
+                currentClueIndex++;
+
+                if (currentClueIndex < clues.length) {
+                    setTimeout(() => {
+                        document.getElementById('user-answer').value = ''; // Clear input
+                        displayClue(); // Display the next clue
+                    }, 2000); // Delay before showing the next clue
+                } else {
+                    feedbackElement.textContent = "Complimenti! Hai trovato tutti i tesori!";
+                    document.getElementById('user-answer').style.display = 'none'; // Hide input
+                    document.getElementById('submit-answer').style.display = 'none'; // Hide button
+                }
+            } else {
+                feedbackElement.textContent = "Sbagliato! Riprova.";
+                feedbackElement.style.color = "red";
+            }
+        });
+
+        // Fetch clues when the page loads
+        fetchClues();
+    </script>
+</body>
+</html>
