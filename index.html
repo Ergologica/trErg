@@ -22,19 +22,29 @@
         let clues = [];
         let currentClueIndex = 0; // Keeps track of the current clue
 
-        // Function to fetch clues from Google Apps Script Web App
         async function fetchClues() {
-            const url = 'https://script.google.com/macros/s/AKfycbx9grS3b3m0bay7MLLZ7nsdUr7XyRPgku-jGtM9aUfGzcRLC-pq6phNA2CXX2u3AA0q8A/exec'; // Sostituisci con l'URL del tuo Web App
-
-            try {
-                const response = await fetch(url);
-                clues = await response.json();
-                displayClue(); // Show the first clue after fetching
-            } catch (error) {
-                console.error('Error fetching clues:', error);
-                document.getElementById('clue-text').textContent = "Errore nel caricamento degli indizi!";
-            }
+    const url = 'YOUR_WEB_APP_URL'; // Use the actual deployed URL here
+    try {
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
         }
+
+        clues = await response.json();
+        
+        // Check if clues are properly formatted
+        if (!Array.isArray(clues) || clues.length === 0) {
+            throw new Error('No clues found');
+        }
+
+        displayClue(); // Show the first clue after fetching
+    } catch (error) {
+        console.error('Error fetching clues:', error);
+        document.getElementById('clue-text').textContent = "Errore nel caricamento degli indizi!";
+    }
+}
+
 
         // Function to display the current clue
         function displayClue() {
