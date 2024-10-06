@@ -1,69 +1,95 @@
 let clues = [];
-let currentClueIndex = 0;
-let difficultyLevel = 'easy'; // Livello iniziale scelto dall'utente
-let cluePrice = 0.01; // Prezzo iniziale per il livello facile
-let questionsAnswered = 0; // Contatore delle domande risposte
+let currentClueIndex = 0; // Indice dell'indizio corrente
+let questionsAnswered = 0; // Numero di domande a cui l'utente ha risposto
+let cluePrice = 0.01; // Prezzo iniziale per ottenere un indizio
 
-// Carica i file JSON per ciascun livello
-const difficultyFiles = {
-    easy: 'ergo_clues_easy.json',
-    medium: 'ergo_clues_medium.json',
-    hard: 'ergo_clues_hard.json'
-};
-
-// Gestisci la selezione del livello di difficoltà
-document.getElementById('easy').addEventListener('click', () => startGame('easy'));
-document.getElementById('medium').addEventListener('click', () => startGame('medium'));
-document.getElementById('hard').addEventListener('click', () => startGame('hard'));
-
-// Funzione che inizia il gioco con il livello selezionato
-function startGame(selectedDifficulty) {
-    difficultyLevel = selectedDifficulty;
-    currentClueIndex = 0;
-    questionsAnswered = 0;
-
-    // Nascondi la selezione della difficoltà e mostra il gioco
-    document.getElementById('difficulty-selection').style.display = 'none';
-    document.getElementById('game-container').style.display = 'block';
-
-    fetchClues();
-}
-
-// Carica gli indizi dal file JSON in base al livello selezionato
+// Funzione per recuperare gli indizi da un file JSON locale
 async function fetchClues() {
-    const url = difficultyFiles[difficultyLevel];
-
+    const url = 'ergo_clues.json'; // Assicurati di avere il file JSON nella cartella principale
     try {
         const response = await fetch(url);
+        
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
         }
 
         clues = await response.json();
-        clues = clues.clues; // Accedi all'array clues
-        displayClue(); // Mostra il primo indizio
+        
+        // Verifica se gli indizi sono formattati correttamente
+        if (!Array.isArray(clues) || clues.length === 0) {
+            throw new Error('Nessun indizio trovato');
+        }
+
+        displayClue(); // Mostra il primo indizio dopo il recupero
     } catch (error) {
-        console.error('Error fetching clues:', error);
+        console.error('Errore nel recupero degli indizi:', error);
         document.getElementById('clue-text').textContent = "Errore nel caricamento degli indizi!";
     }
 }
 
-// Mostra il prossimo indizio
+// Funzione per visualizzare l'indizio corrente
 function displayClue() {
     const clueTitle = document.getElementById('clue-title');
     const clueText = document.getElementById('clue-text');
     const feedbackElement = document.getElementById('feedback');
-    feedbackElement.textContent = ''; // Reset del feedback
+    feedbackElement.textContent = ''; // Reset feedback
 
-    // Mostra il nuovo indizio
+    // Mostra l'indizio corrente
     clueTitle.textContent = `Indizio ${currentClueIndex + 1}`;
     clueText.textContent = clues[currentClueIndex].question;
-
-    // Aggiorna il costo dell'indizio
-    document.getElementById('price').textContent = `Costo attuale per indizio: ${cluePrice.toFixed(2)} ERG`;
 }
 
-// Gestisci la risposta dell'utente
+// Funzione per verificare se la risposta dell'utente è simile a quella corretta
+function isSimilarAnswer(userAnswer, correctAnswer) {
+    const threshold = 70; // Soglia di similarità per considerare una risposta corretta
+    const score = getFuzzyMatchScore(userAnswer, correctAnswer);
+    return score >= threshold;
+}
+
+// Funzione per calcolare il punteggio di similarità tra due risposte
+function getFuzzyMatchScore(userAnswer, correctAnswer) {
+    return Math.round((1 - (levenshteinDistance(userAnswer, correctAnswer) / Math.max(userAnswer.length, correctAnswer.length))) * 100);
+}
+
+// Funzione di Levenshtein per calcolare la distanza tra due stringhe
+function levenshteinDistance(a, b) {
+    const matrix = [];
+    for (let i = 0; i <= b.length; i++) {
+        matrix[i] = [i];
+    }
+    for (let j = 0; j <= a.length; j++) {
+        matrix[0][j] = j;
+    }
+    for (let i = 1; i <= b.length; i++) {
+        for (let j = 1; j <= a.length; j++) {
+            if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                matrix[i][j] = matrix[i - 1][j - 1];
+            } else {
+                matrix[i][j] = Math.min(
+                    matrix[i - 1][j - 1] + 1, // Sostituzione
+                    Math.min(
+                        matrix[i][j - 1] + 1, // Inserimento
+                        matrix[i - 1][j] + 1 // Rimozione
+                    )
+                );
+            }
+        }
+    }
+    return matrix[b.length][a.length];
+}
+
+// Funzione per aumentare la difficoltà
+function increaseDifficulty() {
+    if (questionsAnswered % 5 === 0 && questionsAnswered > 0) {
+        if (cluePrice === 0.01) {
+            cluePrice = 0.05; // Aumenta il prezzo a livello medio
+        } else if (cluePrice === 0.05) {
+            cluePrice = 0.10; // Aumenta il prezzo a livello difficile
+        }
+    }
+}
+
+// Listener per il pulsante di invio della risposta
 document.getElementById('submit-answer').addEventListener('click', function() {
     const userAnswer = document.getElementById('user-answer').value.trim().toLowerCase();
     const correctAnswer = clues[currentClueIndex].answer.toLowerCase();
@@ -75,16 +101,15 @@ document.getElementById('submit-answer').addEventListener('click', function() {
         return;
     }
 
-    if (userAnswer === correctAnswer) {
+    // Usa la funzione di similarità per confrontare le risposte
+    if (isSimilarAnswer(userAnswer, correctAnswer)) {
         feedbackElement.textContent = "Corretto! Passa al prossimo indizio!";
         feedbackElement.style.color = "green";
         currentClueIndex++;
         questionsAnswered++;
 
         // Verifica se il livello di difficoltà deve aumentare
-        if (questionsAnswered % 5 === 0) {
-            increaseDifficulty();
-        }
+        increaseDifficulty();
 
         // Verifica se sono passate 20 domande per raddoppiare il prezzo
         if (questionsAnswered > 20) {
@@ -107,16 +132,5 @@ document.getElementById('submit-answer').addEventListener('click', function() {
     }
 });
 
-// Aumenta il livello di difficoltà ogni 5 domande
-function increaseDifficulty() {
-    if (difficultyLevel === 'easy') {
-        difficultyLevel = 'medium';
-        cluePrice = 0.05;
-        fetchClues(); // Carica le nuove domande
-    } else if (difficultyLevel === 'medium') {
-        difficultyLevel = 'hard';
-        cluePrice = 0.10;
-        fetchClues(); // Carica le nuove domande
-    }
-}
-
+// Recupera gli indizi quando la pagina viene caricata
+fetchClues();
