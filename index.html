@@ -12,6 +12,7 @@
         <div id="clue-container">
             <h2 id="clue-title">Indizio 1</h2>
             <p id="clue-text">Caricamento...</p> <!-- Placeholder text while loading -->
+            <label for="user-answer">Risposta:</label> <!-- Label per migliorare l'accessibilità -->
             <input type="text" id="user-answer" placeholder="Scrivi la tua risposta" />
             <button id="submit-answer">Invia Risposta</button>
             <p id="feedback" style="color: red;"></p> <!-- Feedback message -->
@@ -20,48 +21,47 @@
     
     <script>
         let clues = [];
-        let currentClueIndex = 0; // Keeps track of the current clue
+        let currentClueIndex = localStorage.getItem('currentClueIndex') || 0; // Salvataggio del progresso
 
         async function fetchClues() {
-    const url = 'https://script.google.com/macros/s/AKfycbz7xQgpJwx3RPkcdpSXEHsA4k8kGS3z_vEpuMxCsUNiNQ3hRiyebgl_0TOt66CjNWHAOQ/exec'; // Use the actual deployed URL here
-    try {
-        const response = await fetch(url);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            const url = 'https://script.google.com/macros/s/AKfycbz7xQgpJwx3RPkcdpSXEHsA4k8kGS3z_vEpuMxCsUNiNQ3hRiyebgl_0TOt66CjNWHAOQ/exec';
+            try {
+                const response = await fetch(url);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                clues = await response.json();
+                
+                if (!Array.isArray(clues) || clues.length === 0) {
+                    throw new Error('No clues found');
+                }
+
+                displayClue(); // Mostra il primo indizio dopo il caricamento
+            } catch (error) {
+                console.error('Error fetching clues:', error);
+                document.getElementById('clue-text').textContent = `Errore: ${error.message}. Riprova più tardi.`;
+            }
         }
 
-        clues = await response.json();
-        
-        // Check if clues are properly formatted
-        if (!Array.isArray(clues) || clues.length === 0) {
-            throw new Error('No clues found');
-        }
-
-        displayClue(); // Show the first clue after fetching
-    } catch (error) {
-        console.error('Error fetching clues:', error);
-        document.getElementById('clue-text').textContent = "Errore nel caricamento degli indizi!";
-    }
-}
-
-
-        // Function to display the current clue
         function displayClue() {
             const clueTitle = document.getElementById('clue-title');
             const clueText = document.getElementById('clue-text');
             const feedbackElement = document.getElementById('feedback');
-            feedbackElement.textContent = ''; // Reset feedback
+            feedbackElement.textContent = ''; // Resetta il feedback
 
-            // Display current clue
-            clueTitle.textContent = `Indizio ${currentClueIndex + 1}`;
+            clueTitle.textContent = `Indizio ${parseInt(currentClueIndex) + 1}`;
             clueText.textContent = clues[currentClueIndex].question;
         }
 
-        // Event listener for the submit button
+        function updateClueIndex(index) {
+            localStorage.setItem('currentClueIndex', index); // Aggiorna l'indice salvato nel localStorage
+        }
+
         document.getElementById('submit-answer').addEventListener('click', function() {
             const userAnswer = document.getElementById('user-answer').value.trim().toLowerCase();
-            const correctAnswer = clues[currentClueIndex].answer; // Get the correct answer for the current clue
+            const correctAnswer = clues[currentClueIndex].answer; // Ottieni la risposta corretta per l'indizio corrente
             const feedbackElement = document.getElementById('feedback');
 
             if (userAnswer === '') {
@@ -70,20 +70,27 @@
                 return;
             }
 
+            if (!/^[a-zA-Z0-9]+$/.test(userAnswer)) {
+                feedbackElement.textContent = "La risposta contiene caratteri non validi.";
+                feedbackElement.style.color = "orange";
+                return;
+            }
+
             if (userAnswer === correctAnswer) {
                 feedbackElement.textContent = "Corretto! Passa al prossimo indizio!";
                 feedbackElement.style.color = "green";
                 currentClueIndex++;
+                updateClueIndex(currentClueIndex);
 
                 if (currentClueIndex < clues.length) {
                     setTimeout(() => {
-                        document.getElementById('user-answer').value = ''; // Clear input
-                        displayClue(); // Display the next clue
-                    }, 2000); // Delay before showing the next clue
+                        document.getElementById('user-answer').value = ''; // Pulisce l'input
+                        displayClue(); // Mostra il prossimo indizio
+                    }, 2000);
                 } else {
                     feedbackElement.textContent = "Complimenti! Hai trovato tutti i tesori!";
-                    document.getElementById('user-answer').style.display = 'none'; // Hide input
-                    document.getElementById('submit-answer').style.display = 'none'; // Hide button
+                    document.getElementById('user-answer').classList.add('hidden'); // Nascondi input
+                    document.getElementById('submit-answer').classList.add('hidden'); // Nascondi bottone
                 }
             } else {
                 feedbackElement.textContent = "Sbagliato! Riprova.";
