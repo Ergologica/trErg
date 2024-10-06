@@ -2,9 +2,9 @@ let clues = [];
 let currentClueIndex = 0; // Keeps track of the current clue
 let selectedDifficulty = '';
 const costPerClue = {
-    easy: 0.01,
-    medium: 0.05,
-    hard: 0.10
+    facile: 0.01,
+    media: 0.05,
+    difficle: 0.10
 };
 
 async function fetchClues(difficulty) {
