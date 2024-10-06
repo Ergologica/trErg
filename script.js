@@ -27,16 +27,18 @@ function startGame() {
 async function fetchClues(difficulty) {
     const url = `ergo_${difficulty}_clues.json`; // Build the URL based on difficulty
     try {
+        console.log(`Fetching clues from: ${url}`); // Log the URL being fetched
         const response = await fetch(url);
         
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
         }
 
-        clues = await response.json();
-        
+        const data = await response.json();
+        console.log(data); // Log the fetched data
+
         // Filter clues based on difficulty
-        clues = clues.clues.filter(clue => clue.difficulty === difficulty);
+        clues = data.clues.filter(clue => clue.difficulty === (difficulty === 'easy' ? 'facile' : difficulty === 'medium' ? 'medio' : 'difficile'));
 
         // Check if clues are properly formatted
         if (!Array.isArray(clues) || clues.length === 0) {
