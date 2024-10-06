@@ -23,6 +23,7 @@ async function fetchClues(difficulty) {
     } catch (error) {
         console.error('Error fetching clues:', error);
         document.getElementById('clue-text').textContent = "Errore nel caricamento degli indizi!";
+        // You could also display the error message to the user
     }
 }
 
