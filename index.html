@@ -9,14 +9,26 @@
 <body>
     <div class="container">
         <h1>Caccia al Tesoro - Ergo Platform</h1>
-        <div id="clue-container">
+        
+        <!-- Selezione del livello di difficoltà -->
+        <div id="difficulty-selection">
+            <h2>Seleziona il livello di difficoltà iniziale:</h2>
+            <button id="easy">Facile (0.01 ERG)</button>
+            <button id="medium">Medio (0.05 ERG)</button>
+            <button id="hard">Difficile (0.10 ERG)</button>
+        </div>
+
+        <!-- Sezione del gioco nascosta fino alla selezione del livello -->
+        <div id="game-container" style="display: none;">
             <h2 id="clue-title">Indizio 1</h2>
             <p id="clue-text">Caricamento...</p>
             <input type="text" id="user-answer" placeholder="Scrivi la tua risposta" />
             <button id="submit-answer">Invia Risposta</button>
             <p id="feedback" style="color: red;"></p>
+            <p id="price">Costo attuale per indizio: 0.01 ERG</p>
         </div>
     </div>
+    
     <script src="script.js"></script>
 </body>
 </html>
