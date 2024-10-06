@@ -3,7 +3,7 @@ let currentClueIndex = 0; // Keeps track of the current clue
 let selectedDifficulty = '';
 const costPerClue = {
     facile: 0.01,
-    medium: 0.05,
+    media: 0.05,
     difficile: 0.10
 };
 
