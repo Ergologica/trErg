@@ -1,33 +1,15 @@
 let clues = [];
 let currentClueIndex = 0; // Keeps track of the current clue
-let selectedDifficulty = ''; // Store selected difficulty
-
-// Event listeners for difficulty selection
-document.getElementById('easy').addEventListener('click', function() {
-    selectedDifficulty = 'easy';
-    startGame(); // Start the game
-});
-
-document.getElementById('medium').addEventListener('click', function() {
-    selectedDifficulty = 'medium';
-    startGame(); // Start the game
-});
-
-document.getElementById('hard').addEventListener('click', function() {
-    selectedDifficulty = 'hard';
-    startGame(); // Start the game
-});
-
-function startGame() {
-    document.getElementById('difficulty-selection').style.display = 'none';
-    document.getElementById('game-container').style.display = 'block';
-    fetchClues(selectedDifficulty); // Fetch clues based on selected difficulty
-}
+let selectedDifficulty = '';
+const costPerClue = {
+    easy: 0.01,
+    medium: 0.05,
+    hard: 0.10
+};
 
 async function fetchClues(difficulty) {
-    const url = `ergo_${difficulty}_clues.json`; // Build the URL based on difficulty
+    const url = `ergo_${difficulty}_clues.json`; // Construct the URL based on difficulty
     try {
-        console.log(`Fetching clues from: ${url}`); // Log the URL being fetched
         const response = await fetch(url);
         
         if (!response.ok) {
@@ -35,13 +17,17 @@ async function fetchClues(difficulty) {
         }
 
         const data = await response.json();
-        console.log(data); // Log the fetched data
-
-        // Filter clues based on difficulty
-        clues = data.clues.filter(clue => clue.difficulty === (difficulty === 'easy' ? 'facile' : difficulty === 'medium' ? 'medio' : 'difficile'));
 
         // Check if clues are properly formatted
+        clues = data.clues; // Extract the clues array
         if (!Array.isArray(clues) || clues.length === 0) {
+            throw new Error('No clues found for this difficulty');
+        }
+
+        // Filter clues based on the selected difficulty
+        clues = clues.filter(clue => clue.difficulty === (difficulty === 'easy' ? 'facile' : difficulty === 'medium' ? 'medio' : 'difficile'));
+        
+        if (clues.length === 0) {
             throw new Error('No clues found for this difficulty');
         }
 
@@ -64,29 +50,49 @@ function displayClue() {
     clueTitle.textContent = `Indizio ${currentClueIndex + 1}`;
     clueText.textContent = clues[currentClueIndex].question;
 
-    // Clear previous choices
-    choicesContainer.innerHTML = '';
-
-    // Display choices
+    // Display multiple-choice options
+    choicesContainer.innerHTML = ''; // Clear previous choices
     clues[currentClueIndex].choices.forEach(choice => {
         const label = document.createElement('label');
-        const input = document.createElement('input');
-
-        input.type = 'radio';
-        input.name = 'answer';
-        input.value = choice;
-
-        label.appendChild(input);
-        label.appendChild(document.createTextNode(choice));
+        label.innerHTML = `
+            <input type="radio" name="answer" value="${choice}" required>
+            ${choice}
+        `;
         choicesContainer.appendChild(label);
-        choicesContainer.appendChild(document.createElement('br'));
+        choicesContainer.appendChild(document.createElement('br')); // Line break for better formatting
     });
+}
+
+// Event listener for the difficulty buttons
+document.getElementById('easy').addEventListener('click', function() {
+    selectedDifficulty = 'easy';
+    document.getElementById('cost').textContent = costPerClue.easy; // Set cost for easy
+    startGame();
+});
+
+document.getElementById('medium').addEventListener('click', function() {
+    selectedDifficulty = 'medium';
+    document.getElementById('cost').textContent = costPerClue.medium; // Set cost for medium
+    startGame();
+});
+
+document.getElementById('hard').addEventListener('click', function() {
+    selectedDifficulty = 'hard';
+    document.getElementById('cost').textContent = costPerClue.hard; // Set cost for hard
+    startGame();
+});
+
+// Function to start the game
+function startGame() {
+    document.getElementById('difficulty-selection').style.display = 'none'; // Hide difficulty selection
+    document.getElementById('game-container').style.display = 'block'; // Show game container
+    fetchClues(selectedDifficulty); // Fetch clues for the selected difficulty
 }
 
 // Event listener for the submit button
 document.getElementById('submit-answer').addEventListener('click', function() {
+    const userAnswer = document.querySelector('input[name="answer"]:checked'); // Get selected answer
     const feedbackElement = document.getElementById('feedback');
-    const userAnswer = document.querySelector('input[name="answer"]:checked');
 
     if (!userAnswer) {
         feedbackElement.textContent = "Per favore, seleziona una risposta.";
@@ -94,10 +100,10 @@ document.getElementById('submit-answer').addEventListener('click', function() {
         return;
     }
 
+    const userChoice = userAnswer.value; // Get the value of the selected radio button
     const correctAnswer = clues[currentClueIndex].answer; // Get the correct answer for the current clue
 
-    // Check for similarity if the answer is incorrect
-    if (userAnswer.value === correctAnswer) {
+    if (userChoice === correctAnswer) {
         feedbackElement.textContent = "Corretto! Passa al prossimo indizio!";
         feedbackElement.style.color = "green";
         currentClueIndex++;
@@ -108,7 +114,7 @@ document.getElementById('submit-answer').addEventListener('click', function() {
             }, 2000); // Delay before showing the next clue
         } else {
             feedbackElement.textContent = "Complimenti! Hai trovato tutti i tesori!";
-            document.getElementById('user-answer').style.display = 'none'; // Hide input
+            document.getElementById('user-answer').style.display = 'none'; // Hide input (not used anymore)
             document.getElementById('submit-answer').style.display = 'none'; // Hide button
         }
     } else {
