@@ -3,8 +3,8 @@ let currentClueIndex = 0; // Keeps track of the current clue
 let selectedDifficulty = '';
 const costPerClue = {
     facile: 0.01,
-    media: 0.05,
-    difficle: 0.10
+    medium: 0.05,
+    difficile: 0.10
 };
 
 async function fetchClues(difficulty) {
