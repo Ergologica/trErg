@@ -1,12 +1,10 @@
 let clues = [];
-let currentClueIndex = 0; // Indice dell'indizio corrente
-let questionsAnswered = 0; // Numero di domande a cui l'utente ha risposto
-let cluePrice = 0.01; // Prezzo iniziale per ottenere un indizio
-let difficultyLevel = 'easy'; // Livello di difficoltà iniziale
+let currentClueIndex = 0; // Keeps track of the current clue
+let selectedDifficulty = ''; // To store the selected difficulty level
 
-// Funzione per recuperare gli indizi da un file JSON locale in base al livello di difficoltà
-async function fetchClues() {
-    const url = `ergo_clue_${difficultyLevel}.json`; // Costruisce il nome del file in base alla difficoltà
+// Funzione per caricare gli indizi in base alla difficoltà selezionata
+async function fetchClues(difficulty) {
+    const url = `ergo_${difficulty}_clues.json`; // Costruisce l'URL in base alla difficoltà
     try {
         const response = await fetch(url);
         
@@ -15,15 +13,15 @@ async function fetchClues() {
         }
 
         clues = await response.json();
-        
-        // Verifica se gli indizi sono formattati correttamente
-        if (!Array.isArray(clues) || clues.length === 0) {
-            throw new Error('Nessun indizio trovato');
+
+        // Check if clues are properly formatted
+        if (!Array.isArray(clues.clues) || clues.clues.length === 0) {
+            throw new Error('No clues found');
         }
 
-        displayClue(); // Mostra il primo indizio dopo il recupero
+        displayClue(); // Mostra il primo indizio dopo aver caricato i dati
     } catch (error) {
-        console.error('Errore nel recupero degli indizi:', error);
+        console.error('Error fetching clues:', error);
         document.getElementById('clue-text').textContent = "Errore nel caricamento degli indizi!";
     }
 }
@@ -33,112 +31,96 @@ function displayClue() {
     const clueTitle = document.getElementById('clue-title');
     const clueText = document.getElementById('clue-text');
     const feedbackElement = document.getElementById('feedback');
-    feedbackElement.textContent = ''; // Reset feedback
+    const choicesContainer = document.getElementById('choices-container');
+    feedbackElement.textContent = ''; // Resetta il feedback
 
-    // Mostra l'indizio corrente
+    // Visualizza l'indizio corrente
+    const currentClue = clues.clues[currentClueIndex];
     clueTitle.textContent = `Indizio ${currentClueIndex + 1}`;
-    clueText.textContent = clues[currentClueIndex].question;
+    clueText.textContent = currentClue.question;
+
+    // Pulisce le scelte precedenti
+    choicesContainer.innerHTML = '';
+
+    // Visualizza le scelte di risposta
+    currentClue.choices.forEach((choice, index) => {
+        const choiceElement = document.createElement('div');
+        choiceElement.innerHTML = `<input type="radio" name="answer" value="${choice}" id="choice${index}"> <label for="choice${index}">${choice}</label>`;
+        choicesContainer.appendChild(choiceElement);
+    });
 }
 
-// Funzione per verificare se la risposta dell'utente è simile a quella corretta
-function isSimilarAnswer(userAnswer, correctAnswer) {
-    const threshold = 70; // Soglia di similarità per considerare una risposta corretta
-    const score = getFuzzyMatchScore(userAnswer, correctAnswer);
-    return score >= threshold;
-}
+// Funzione per verificare la risposta dell'utente
+function checkAnswer(userAnswer) {
+    const currentClue = clues.clues[currentClueIndex];
+    const correctAnswer = currentClue.answer; // Ottiene la risposta corretta
 
-// Funzione per calcolare il punteggio di similarità tra due risposte
-function getFuzzyMatchScore(userAnswer, correctAnswer) {
-    return Math.round((1 - (levenshteinDistance(userAnswer, correctAnswer) / Math.max(userAnswer.length, correctAnswer.length))) * 100);
-}
-
-// Funzione di Levenshtein per calcolare la distanza tra due stringhe
-function levenshteinDistance(a, b) {
-    const matrix = [];
-    for (let i = 0; i <= b.length; i++) {
-        matrix[i] = [i];
-    }
-    for (let j = 0; j <= a.length; j++) {
-        matrix[0][j] = j;
-    }
-    for (let i = 1; i <= b.length; i++) {
-        for (let j = 1; j <= a.length; j++) {
-            if (b.charAt(i - 1) === a.charAt(j - 1)) {
-                matrix[i][j] = matrix[i - 1][j - 1];
-            } else {
-                matrix[i][j] = Math.min(
-                    matrix[i - 1][j - 1] + 1, // Sostituzione
-                    Math.min(
-                        matrix[i][j - 1] + 1, // Inserimento
-                        matrix[i - 1][j] + 1 // Rimozione
-                    )
-                );
-            }
-        }
-    }
-    return matrix[b.length][a.length];
-}
-
-// Funzione per aumentare la difficoltà
-function increaseDifficulty() {
-    if (questionsAnswered % 5 === 0 && questionsAnswered > 0) {
-        if (cluePrice === 0.01) {
-            cluePrice = 0.05; // Aumenta il prezzo a livello medio
-            difficultyLevel = 'medium'; // Cambia il livello di difficoltà
-        } else if (cluePrice === 0.05) {
-            cluePrice = 0.10; // Aumenta il prezzo a livello difficile
-            difficultyLevel = 'hard'; // Cambia il livello di difficoltà
-        }
+    // Controlla se la risposta dell'utente è corretta
+    if (userAnswer === correctAnswer) {
+        return 'Corretto! Passa al prossimo indizio!';
+    } else if (isCloseEnough(userAnswer, correctAnswer)) {
+        return 'Quasi! Prova a riflettere su questa risposta.';
+    } else {
+        return 'Sbagliato! Riprova.';
     }
 }
 
-// Listener per il pulsante di invio della risposta
+// Funzione per determinare se la risposta dell'utente è "vicina" alla risposta corretta
+function isCloseEnough(userAnswer, correctAnswer) {
+    // Modifica questa logica per adattarla alla tua definizione di "vicinanza"
+    return userAnswer.includes(correctAnswer) || correctAnswer.includes(userAnswer);
+}
+
+// Aggiunge gli ascoltatori di eventi per i pulsanti di selezione della difficoltà
+document.getElementById('easy').addEventListener('click', function() {
+    selectedDifficulty = 'easy';
+    startGame();
+});
+
+document.getElementById('medium').addEventListener('click', function() {
+    selectedDifficulty = 'medium';
+    startGame();
+});
+
+document.getElementById('hard').addEventListener('click', function() {
+    selectedDifficulty = 'hard';
+    startGame();
+});
+
+// Inizia il gioco nascondendo la selezione della difficoltà e mostrando il contenitore del gioco
+function startGame() {
+    document.getElementById('difficulty-selection').style.display = 'none';
+    document.getElementById('game-container').style.display = 'block';
+    fetchClues(selectedDifficulty); // Fetch clues based on selected difficulty
+}
+
+// Aggiungi l'ascoltatore di eventi per il pulsante di invio della risposta
 document.getElementById('submit-answer').addEventListener('click', function() {
-    const userAnswer = document.getElementById('user-answer').value.trim().toLowerCase();
-    const correctAnswer = clues[currentClueIndex].answer.toLowerCase();
+    const selectedChoice = document.querySelector('input[name="answer"]:checked');
     const feedbackElement = document.getElementById('feedback');
 
-    if (userAnswer === '') {
-        feedbackElement.textContent = "Per favore, inserisci una risposta.";
+    if (!selectedChoice) {
+        feedbackElement.textContent = "Per favore, seleziona una risposta.";
         feedbackElement.style.color = "orange";
         return;
     }
 
-    // Usa la funzione di similarità per confrontare le risposte
-    if (isSimilarAnswer(userAnswer, correctAnswer)) {
-        feedbackElement.textContent = "Corretto! Passa al prossimo indizio!";
-        feedbackElement.style.color = "green";
+    const userAnswer = selectedChoice.value; // Ottiene la risposta selezionata
+    const feedbackMessage = checkAnswer(userAnswer); // Verifica la risposta dell'utente
+    feedbackElement.textContent = feedbackMessage; // Mostra il feedback
+
+    if (feedbackMessage.startsWith('Corretto')) {
         currentClueIndex++;
-        questionsAnswered++;
-
-        // Verifica se il livello di difficoltà deve aumentare
-        increaseDifficulty();
-
-        // Verifica se sono passate 20 domande per raddoppiare il prezzo
-        if (questionsAnswered > 20) {
-            cluePrice *= 2;
-        }
-
-        if (currentClueIndex < clues.length) {
+        if (currentClueIndex < clues.clues.length) {
             setTimeout(() => {
-                document.getElementById('user-answer').value = ''; // Pulisci l'input
                 displayClue(); // Mostra il prossimo indizio
-            }, 2000); // Ritardo di 2 secondi prima del prossimo indizio
+            }, 2000); // Ritardo prima di mostrare il prossimo indizio
         } else {
             feedbackElement.textContent = "Complimenti! Hai trovato tutti i tesori!";
-            document.getElementById('user-answer').style.display = 'none';
-            document.getElementById('submit-answer').style.display = 'none';
+            document.getElementById('choices-container').style.display = 'none'; // Nascondi le scelte
+            document.getElementById('submit-answer').style.display = 'none'; // Nascondi il pulsante
         }
     } else {
-        feedbackElement.textContent = "Sbagliato! Riprova.";
         feedbackElement.style.color = "red";
     }
 });
-
-// Funzione per iniziare il gioco e selezionare il livello di difficoltà
-function startGame(selectedDifficulty) {
-    difficultyLevel = selectedDifficulty; // Imposta il livello di difficoltà
-    fetchClues(); // Recupera gli indizi
-}
-
-// Esempio di utilizzo: chiama startGame('easy') per iniziare il gioco con il livello facile
