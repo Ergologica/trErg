@@ -2,10 +2,11 @@ let clues = [];
 let currentClueIndex = 0; // Indice dell'indizio corrente
 let questionsAnswered = 0; // Numero di domande a cui l'utente ha risposto
 let cluePrice = 0.01; // Prezzo iniziale per ottenere un indizio
+let difficultyLevel = 'easy'; // Livello di difficoltà iniziale
 
-// Funzione per recuperare gli indizi da un file JSON locale
+// Funzione per recuperare gli indizi da un file JSON locale in base al livello di difficoltà
 async function fetchClues() {
-    const url = 'ergo_clues.json'; // Assicurati di avere il file JSON nella cartella principale
+    const url = `ergo_clue_${difficultyLevel}.json`; // Costruisce il nome del file in base alla difficoltà
     try {
         const response = await fetch(url);
         
@@ -83,8 +84,10 @@ function increaseDifficulty() {
     if (questionsAnswered % 5 === 0 && questionsAnswered > 0) {
         if (cluePrice === 0.01) {
             cluePrice = 0.05; // Aumenta il prezzo a livello medio
+            difficultyLevel = 'medium'; // Cambia il livello di difficoltà
         } else if (cluePrice === 0.05) {
             cluePrice = 0.10; // Aumenta il prezzo a livello difficile
+            difficultyLevel = 'hard'; // Cambia il livello di difficoltà
         }
     }
 }
@@ -132,5 +135,10 @@ document.getElementById('submit-answer').addEventListener('click', function() {
     }
 });
 
-// Recupera gli indizi quando la pagina viene caricata
-fetchClues();
+// Funzione per iniziare il gioco e selezionare il livello di difficoltà
+function startGame(selectedDifficulty) {
+    difficultyLevel = selectedDifficulty; // Imposta il livello di difficoltà
+    fetchClues(); // Recupera gli indizi
+}
+
+// Esempio di utilizzo: chiama startGame('easy') per iniziare il gioco con il livello facile
