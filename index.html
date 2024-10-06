@@ -9,107 +9,26 @@
 <body>
     <div class="container">
         <h1>Caccia al Tesoro - Ergo Platform</h1>
-        <div id="clue-container">
-            <h2 id="clue-title">Indizio</h2>
-            <p id="clue-text">Caricamento...</p> <!-- Placeholder text while loading -->
+        
+        <!-- Selezione del livello di difficoltà -->
+        <div id="difficulty-selection">
+            <h2>Seleziona il livello di difficoltà iniziale:</h2>
+            <button id="easy">Facile (0.01 ERG)</button>
+            <button id="medium">Medio (0.05 ERG)</button>
+            <button id="hard">Difficile (0.10 ERG)</button>
+        </div>
+
+        <!-- Sezione del gioco nascosta fino alla selezione del livello -->
+        <div id="game-container" style="display: none;">
+            <h2 id="clue-title">Indizio 1</h2>
+            <p id="clue-text">Caricamento...</p>
             <div id="choices-container"></div> <!-- Placeholder for multiple choices -->
-            <input type="text" id="user-answer" placeholder="Scrivi la tua risposta" style="display:none;"/>
-            <button id="submit-answer" style="display:none;">Invia Risposta</button>
-            <p id="feedback" style="color: red;"></p> <!-- Feedback message -->
+            <button id="submit-answer">Invia Risposta</button>
+            <p id="feedback" style="color: red;"></p>
+            <p id="price">Costo attuale per indizio: 0.01 ERG</p>
         </div>
     </div>
     
-    <script>
-        let clues = [];
-        let currentClueIndex = 0; // Keeps track of the current clue
-
-        async function fetchClues(difficulty) {
-            const url = `ergo_${difficulty}_clues.json`; // URL for fetching clues based on difficulty
-            try {
-                const response = await fetch(url);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-
-                clues = await response.json();
-
-                // Check if clues are properly formatted
-                if (!Array.isArray(clues.clues) || clues.clues.length === 0) {
-                    throw new Error('No clues found');
-                }
-
-                displayClue(); // Show the first clue after fetching
-            } catch (error) {
-                console.error('Error fetching clues:', error);
-                document.getElementById('clue-text').textContent = "Errore nel caricamento degli indizi!";
-            }
-        }
-
-        // Function to display the current clue
-        function displayClue() {
-            const clueTitle = document.getElementById('clue-title');
-            const clueText = document.getElementById('clue-text');
-            const feedbackElement = document.getElementById('feedback');
-            const choicesContainer = document.getElementById('choices-container');
-            feedbackElement.textContent = ''; // Reset feedback
-
-            // Display current clue
-            const currentClue = clues.clues[currentClueIndex];
-            clueTitle.textContent = `Indizio ${currentClueIndex + 1}`;
-            clueText.textContent = currentClue.question;
-
-            // Clear previous choices
-            choicesContainer.innerHTML = '';
-
-            // Display answer choices
-            currentClue.choices.forEach((choice, index) => {
-                const choiceElement = document.createElement('div');
-                choiceElement.innerHTML = `<input type="radio" name="answer" value="${choice}" id="choice${index}"> <label for="choice${index}">${choice}</label>`;
-                choicesContainer.appendChild(choiceElement);
-            });
-
-            // Show the input and button
-            document.getElementById('user-answer').style.display = 'none';
-            document.getElementById('submit-answer').style.display = 'block';
-        }
-
-        // Event listener for the submit button
-        document.getElementById('submit-answer').addEventListener('click', function() {
-            const selectedChoice = document.querySelector('input[name="answer"]:checked');
-            const feedbackElement = document.getElementById('feedback');
-
-            if (!selectedChoice) {
-                feedbackElement.textContent = "Per favore, seleziona una risposta.";
-                feedbackElement.style.color = "orange";
-                return;
-            }
-
-            const userAnswer = selectedChoice.value; // Get the selected answer
-            const correctAnswer = clues.clues[currentClueIndex].answer; // Get the correct answer for the current clue
-
-            if (userAnswer === correctAnswer) {
-                feedbackElement.textContent = "Corretto! Passa al prossimo indizio!";
-                feedbackElement.style.color = "green";
-                currentClueIndex++;
-
-                if (currentClueIndex < clues.clues.length) {
-                    setTimeout(() => {
-                        displayClue(); // Display the next clue
-                    }, 2000); // Delay before showing the next clue
-                } else {
-                    feedbackElement.textContent = "Complimenti! Hai trovato tutti i tesori!";
-                    document.getElementById('choices-container').style.display = 'none'; // Hide choices
-                    document.getElementById('submit-answer').style.display = 'none'; // Hide button
-                }
-            } else {
-                feedbackElement.textContent = "Sbagliato! Riprova.";
-                feedbackElement.style.color = "red";
-            }
-        });
-
-        // Fetch clues when the page loads, change 'facile' to 'media' or 'difficile' to get different difficulty levels
-        fetchClues('facile'); // Example: Load easy clues by default
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
